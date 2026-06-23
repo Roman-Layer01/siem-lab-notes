@@ -1,8 +1,7 @@
 # SIEM Lab Notes
 
 ## Overview
-Hands-on SIEM and detection engineering lab using Elastic Stack.  
-This lab focuses on detecting suspicious Windows and PowerShell activity using real telemetry and custom detection queries.
+Hands-on SIEM and detection engineering lab using Elastic Stack, focused on developing and validating detection logic across endpoint and network telemetry.
 
 ***
 
@@ -269,10 +268,12 @@ The activity was confirmed via Script Block Logging (4104), supported by process
 - Correlate multiple log sources automatically
 - Integrate Pi-hole logs into Elastic for full pipeline detection
 
-## Raspberry Pi Network Monitoring & Alerting Lab
+***
+
+## Additional Lab: Network-Based Detection (Raspberry Pi)
 
 ### Overview
-Built a lightweight network monitoring and alerting solution using a Raspberry Pi to simulate a basic network detection sensor. The goal was to detect new devices joining the local network and generate real-time alerts, similar to how SOC environments monitor network activity.
+Built a lightweight network monitoring and alerting solution using a Raspberry Pi to simulate a basic network detection sensor capable of identifying changes in asset presence and generating real-time alerts. The goal was to detect new devices joining the local network and generate real-time alerts, similar to how SOC environments monitor network activity.
 
 ---
 
@@ -320,7 +321,7 @@ Example alert:
 ```
 🚨 New device detected:
 
-10.0.0.100 9a:f3:47:cb:3c:57
+10.0.0.X    9a:f3:XX:XX:XX:XX    Unknown device (locally administered MAC)
 ```
 
 ---
@@ -364,6 +365,7 @@ fi
 - Learned how network devices can use randomized MAC addresses (locally administered MACs)
 - Identified challenges with alert noise and need for filtering/tuning
 - Gained practical understanding of how SOC tools detect and alert on network changes
+- Recognized the need for alert tuning to reduce noise from legitimate devices (e.g., MAC randomization)
 
 ---
 
@@ -372,3 +374,7 @@ fi
 - Add device labeling (known assets vs unknown)
 - Send logs to Elastic for centralized analysis
 - Replace polling with event-driven monitoring (if applicable)
+
+## Impact
+
+This lab demonstrates the ability to build detection pipelines beyond endpoint logs, incorporating network-level visibility and custom alerting mechanisms.
