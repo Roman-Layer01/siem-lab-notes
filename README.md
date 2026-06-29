@@ -202,6 +202,29 @@ Detection engineering must align with **actual telemetry behavior**, not assumpt
 
 ---
 
+## Detection Coverage (MITRE ATT&CK)
+
+This lab aligns detection logic with the MITRE ATT&CK framework, which maps real-world adversary behavior into tactics (objectives) and techniques (methods used to achieve those objectives).
+
+### Covered Tactics & Techniques
+
+- **T1059.001 – PowerShell (Execution)**
+  - Detects PowerShell-based script execution using process creation (Event ID 4688)
+
+- **T1027 – Obfuscated/Encoded Files or Information (Defense Evasion)**
+  - Detects use of encoded PowerShell commands (Event ID 4104)
+
+- **T1105 – Ingress Tool Transfer (Command and Control)**
+  - Detects download cradle activity using PowerShell (IEX + WebClient)
+
+- **T1110 – Brute Force (Credential Access)**
+  - Detects repeated failed login attempts (Event ID 4625)
+
+### Purpose
+
+Mapping detections to MITRE ATT&CK provides a standardized way to understand attacker behavior, evaluate detection coverage, and improve defensive strategies.
+``
+
 ## Key Lessons Learned
 
 - Detection rules must be validated against real telemetry  
