@@ -223,7 +223,6 @@ This lab aligns detection logic with the MITRE ATT&CK framework, which maps real
 ### Purpose
 
 Mapping detections to MITRE ATT&CK provides a standardized way to understand attacker behavior, evaluate detection coverage, and improve defensive strategies.
-``
 
 ## Key Lessons Learned
 
