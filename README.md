@@ -59,6 +59,14 @@ Validated ingestion of Windows Security logs.
 
 ## Detection Engineering
 
+### Detection Write-Ups
+
+Detailed detection engineering write-ups are stored in the `detections/` folder.
+
+| Detection | Technique | Data Source | Status |
+|---|---|---|---|
+| [Windows Event Log Clearing](detections/windows-event-log-clearing.md) | T1070.001 - Clear Windows Event Logs | Windows Security Event ID 4688 | Validated |
+
 ### Failed Login Detection Rule
 
 **Objective:** Detect brute-force or unauthorized access attempts.
@@ -78,6 +86,33 @@ event.code: 4625 and winlog.channel: "Security" and winlog.computer_name: "Deskt
 - Reduced to 3 due to default Windows account lockout behavior  
 
 ✅ Successfully triggered alerts through simulated failed login attempts
+
+---
+
+
+### Windows Event Log Clearing Detection
+
+**Objective:** Detect attempts to clear Windows Event Logs using `wevtutil.exe`.
+
+**Query:**
+```kql
+event.action: "created-process" and event.code: "4688" and process.name.caseless: "wevtutil.exe" and process.args: "cl"
+```
+
+**High-Confidence Query:**
+```kql
+event.action: "created-process" and event.code: "4688" and process.name.caseless: "wevtutil.exe" and process.args: "cl" and process.parent.name.caseless: "powershell.exe"
+```
+
+**Key Insight:**
+- Detects use of a native Windows utility to clear event logs
+- Maps to MITRE ATT&CK T1070.001 - Clear Windows Event Logs
+- Uses Windows Security Event ID 4688 process creation telemetry
+- Parent process context showed PowerShell launching `wevtutil.exe`, strengthening the investigation story
+
+✅ Successfully triggered an Elastic Security alert through simulated event log clearing
+
+**Full write-up:** [detections/windows-event-log-clearing.md](detections/windows-event-log-clearing.md)
 
 ---
 
@@ -208,8 +243,13 @@ This lab aligns detection logic with the MITRE ATT&CK framework, which maps real
 
 ### Covered Tactics & Techniques
 
+- **T1070.001 – Clear Windows Event Logs (Defense Evasion)**
+  - Detects use of `wevtutil.exe` with the `cl` argument to clear Windows Event Logs
+  - Uses Windows Security Event ID 4688 process creation telemetry
+  - Includes parent process context when launched from PowerShell
+
 - **T1059.001 – PowerShell (Execution)**
-  - Detects PowerShell-based script execution using process creation (Event ID 4688)
+  - Detects PowerShell activity using process creation telemetry and Script Block Logging
 
 - **T1027 – Obfuscated/Encoded Files or Information (Defense Evasion)**
   - Detects use of encoded PowerShell commands (Event ID 4104)
